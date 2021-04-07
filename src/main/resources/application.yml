@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: nurl
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+
+key:
+  length: 10
