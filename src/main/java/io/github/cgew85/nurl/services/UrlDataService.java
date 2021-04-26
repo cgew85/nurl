@@ -10,6 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.util.Objects.requireNonNull;
 
 @Service
 public class UrlDataService {
@@ -26,24 +30,31 @@ public class UrlDataService {
 
     @Transactional
     public String saveUrl(String url) {
-        var hashedUrl = DigestUtils.sha256Hex(url);
+        requireNonNull(url);
+        if (validateUrl(url)) {
+            var hashedUrl = DigestUtils.sha256Hex(url);
 
-        UrlData urlData;
-        if(urlDataRepository.existsByEmail(hashedUrl)) {
-            urlData = urlDataRepository.findByHashedUrl(hashedUrl);
-            urlData.setVisits(urlData.getVisits() + 1);
+            UrlData urlData;
+            if (urlDataRepository.existsByEmail(hashedUrl)) {
+                urlData = urlDataRepository.findByHashedUrl(hashedUrl);
+                urlData.setVisits(urlData.getVisits() + 1);
+            } else {
+                urlData = new UrlData();
+                urlData.setKey(generateRandomString());
+                urlData.setHashedUrl(hashedUrl);
+                urlData.setUrl(url);
+                urlData.setVisits(0L);
+                urlData.setCreatedDate(LocalDateTime.now());
+            }
+            urlData.setLastVisited(LocalDateTime.now());
+            urlData = urlDataRepository.save(urlData);
+
+            return urlData.getKey();
         } else {
-            urlData = new UrlData();
-            urlData.setKey(generateRandomString());
-            urlData.setHashedUrl(hashedUrl);
-            urlData.setUrl(url);
-            urlData.setVisits(0L);
-            urlData.setCreatedDate(LocalDateTime.now());
+            //TODO: Exception handling
+            throw new RuntimeException();
         }
-        urlData.setLastVisited(LocalDateTime.now());
-        urlData = urlDataRepository.save(urlData);
 
-        return urlData.getKey();
     }
 
     public String getUrlByKey(String key) {
@@ -61,5 +72,11 @@ public class UrlDataService {
                 .limit(targetStringLength)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString().toUpperCase();
+    }
+
+    private boolean validateUrl(String url) {
+        Pattern pattern = Pattern.compile("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)\n");
+        Matcher matcher = pattern.matcher(url);
+        return matcher.matches();
     }
 }

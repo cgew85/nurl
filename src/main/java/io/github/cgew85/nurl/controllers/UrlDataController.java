@@ -7,12 +7,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("urls")
-public class UrlDataController {
+public class UrlDataController implements UrlDataControllerInterface {
 
     private final UrlDataService urlDataService;
 
@@ -29,7 +29,7 @@ public class UrlDataController {
         urlDataResponse.setKey(urlDataService.saveUrl(url));
         urlDataResponse.setCreatedDate(LocalDateTime.now());
 
-        return ResponseEntity.of(Optional.of(urlDataResponse));
+        return ResponseEntity.created(URI.create(urlDataResponse.getKey())).build();
     }
 
     @GetMapping(value = "/{key}", produces = MediaType.APPLICATION_JSON_VALUE)
